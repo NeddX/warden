@@ -1,0 +1,7 @@
+qemu-system-arm \
+  -M stm32f7discovery \
+  -cpu cortex-m7 \
+  -nographic \
+  -kernel firmware.elf \
+  -serial stdio \
+  -serial tcp::7878,server,nowait
