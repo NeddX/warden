@@ -1,0 +1,10 @@
+mach create
+
+machine LoadPlatformDescription @platforms/boards/stm32f7_discovery-bb.repl
+machine LoadPlatformDescription @scripts/add-ccm.repl
+
+emulation CreateServerSocketTerminal $serial_tcp_port "usart1_term"
+connector Connect sysbus.usart1 usart1_term
+
+sysbus LoadELF @build/bin/warden.elf
+machine StartGdbServer 3333

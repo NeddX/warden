@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+if [[ "$WARDEN_KERNEL" != "1" ]]; then
+    echo "error: bad environment"
+    echo "hint: source warden.env"
+    exit -1
+fi
+
+while true
+do
+    nc -t localhost $WARDEN_RENODE_SERIAL_TCP_PORT
+done

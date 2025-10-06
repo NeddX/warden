@@ -1,6 +1,10 @@
-EMTRY(wsys_reset_handler)
+/* Linker file for STM32F74xxx MCU, Renode EMU */
+
+ENTRY(w_sys_reset_handler)
 
 _estack = ORIGIN(SRAM) + LENGTH(SRAM);
+_Min_Heap_Size = 0x200;      /* required amount of heap  */
+_Min_Stack_Size = 0x400; /* required amount of stack */
 
 MEMORY
 {
@@ -8,17 +12,14 @@ MEMORY
     /* Entire Flash memory (sectors 0..11) with Single Bank Organization. */
     /* <DOC> 3: Embedded flash memory (FLASH)
     /* */
-    FLASH       (rx)    : ORIGIN = 0x080000000, LENGTH = 2048K
+    FLASH       (rx)    : ORIGIN = 0x08000000, LENGTH = 1024K
 
     /* */
     /* <DOC> 2.3: Embedded SRAM
     /* */
-    SRAM        (rxw)   : ORIGIN = 0x200200000, LENGTH = 384K
+    SRAM        (rwx)   : ORIGIN = 0x20000000, LENGTH = 320K
 
-    /* Tightly coupled high-speed CPU access, no cache performance-critical code SRAM */
-    /* <DOC> 2.3: Embedded SRAM
-    /* */
-    DTCM_SRAM   (rxw)   : ORIGIN = 0x20000000, LENGTH = 128K
+    CCMRAM      (rwx)   : ORIGIN = 0x10000000, LENGTH = 64K
 }
 
 SECTIONS
@@ -30,7 +31,7 @@ SECTIONS
         . = ALIGN(4);
     } >FLASH
 
-    .text:
+    .text :
     {
         . = ALIGN(4);
         *(.text)
@@ -52,7 +53,7 @@ SECTIONS
         . = ALIGN(4);
     } >FLASH
 
-    /* Initialized data sections into "RAM" Ram type memory */
+    /* Initialized data sections into "SRAM" Ram type memory */
     .data :
     {
         . = ALIGN(4);
@@ -64,9 +65,9 @@ SECTIONS
 
         . = ALIGN(4);
         _edata = .;        /* define a global symbol at data end */
-    } >RAM AT> FLASH
+    } >SRAM AT> FLASH
 
-    /* Uninitialized data section into "RAM" Ram type memory */
+    /* Uninitialized data section into "SRAM" Ram type memory */
     . = ALIGN(4);
     .bss :
     {
@@ -80,17 +81,27 @@ SECTIONS
         . = ALIGN(4);
         _ebss = .;         /* define a global symbol at bss end */
         __bss_end__ = _ebss;
-    } >RAM
+    } >SRAM
+
+    ._user_heap_stack :
+    {
+        . = ALIGN(8);
+        PROVIDE(end = .);
+        PROVIDE(_end = .);
+        . = . + _Min_Heap_Size;
+        . = . + _Min_Stack_Size;
+        . = ALIGN(8);
+    } >SRAM
 
     /* Used by the startup to initialize data */
     _sidata = LOADADDR(.data);
-    _estack = ORIGIN(SRAM) + LENGTH(SRAM)
+    _estack = ORIGIN(SRAM) + LENGTH(SRAM);
 
     /* Remove information from the compiler libraries */
     /DISCARD/ :
     {
-        libc.a ( * )
-        libm.a ( * )
+        /* libc.a ( * ) */
+        /* libm.a ( * ) */
         libgcc.a ( * )
     }
 }

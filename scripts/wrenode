@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+if [[ "$WARDEN_KERNEL" != "1" ]]; then
+    echo "error: bad environment"
+    echo "hint: source warden.env"
+    exit -1
+fi
+
+renode -e "set serial_tcp_port 7878 ; i @scripts/wstm32f746.resc" --console
+#sleep 1
+#arm-none-eabi-gdb $WARDEN_BUILD_DIR/bin/warden.elf -ex "target remote :3333"
+#wait %1

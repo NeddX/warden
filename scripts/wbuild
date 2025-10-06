@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+
+if [[ "$WARDEN_KERNEL" != "1" ]]; then
+    echo "error: bad environment"
+    echo "hint: source warden.env"
+    exit -1
+fi
+
+mkdir -p $WARDEN_BUILD_DIR/bin
+
+make -C $WARDEN_VENDOR_DIR/libopencm3 TARGET=stm32/f7
+
+arm-none-eabi-gcc -g -O0 -mcpu=$WARDEN_CPU -mthumb \
+    -mfpu=fpv5-d16 \
+    -mfloat-abi=hard \
+    -I$WARDEN_VENDOR_DIR/libopencm3/include \
+    -I$WARDEN_ROOT/src \
+    -DSTM32F7 \
+    -c $WARDEN_ROOT/src/kernel.c \
+    -o $WARDEN_ROOT/build/kernel.o
+
+arm-none-eabi-gcc -g -O0 -mcpu=$WARDEN_CPU -mthumb \
+    -mfpu=fpv5-d16 \
+    -mfloat-abi=hard \
+    -I$WARDEN_VENDOR_DIR/libopencm3/include \
+    -I$WARDEN_ROOT/src \
+    -DSTM32F7 \
+    -c $WARDEN_ROOT/src/syscall.c \
+    -o $WARDEN_ROOT/build/syscall.o
+
+arm-none-eabi-gcc -g -O0 -mcpu=$WARDEN_CPU -mthumb \
+    -mfpu=fpv5-d16 \
+    -mfloat-abi=hard \
+    -c $WARDEN_ROOT/src/startup.s \
+    -o $WARDEN_ROOT/build/startup.o
+
+arm-none-eabi-gcc -g -O0 -mcpu=$WARDEN_CPU -mthumb \
+    -mfpu=fpv5-d16 \
+    -mfloat-abi=hard \
+    -T $WARDEN_ROOT/linker.ld \
+    -Wl,--gc-sections \
+    --specs=nano.specs \
+    $WARDEN_BUILD_DIR/startup.o \
+    $WARDEN_BUILD_DIR/kernel.o \
+    $WARDEN_BUILD_DIR/syscall.o \
+    -L$WARDEN_VENDOR_DIR/libopencm3/lib \
+    -lopencm3_stm32f7 \
+    -o $WARDEN_BUILD_DIR/bin/$WARDEN_OUT.elf
+
+if [[ "$?" == "0" ]]; then
+    echo "[!]: Build succeeded"
+fi

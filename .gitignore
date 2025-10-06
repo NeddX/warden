@@ -1,0 +1,12 @@
+builds/
+build/
+node_modules/
+*.swp
+*.swo
+*.swn
+*.o
+*.elf
+*.hex
+*.lib
+*.tmp
+ignore_*

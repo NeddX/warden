@@ -1,0 +1,99 @@
+#!/usr/bin/env node
+
+const project = Flask.add_project({
+    name: "warden",
+    languages: [ Languages.C, Languages.CXX, Languages.ASM ],
+    type: ProjectType.StaticLib,
+    version: [ 0, 0, 1 ],
+});
+
+if (project.env("WARDEN_KERNEL") != "1") {
+    project.print(LEVEL_ERROR, "bad environment, hint: source warden.env");
+    process.exit(-1);
+}
+
+const standard_flags = `-mcpu=${project.env("WARDEN_CPU")} -mthumb -mfpu=fpv5-d16 -mfloat-abi=hard`;
+const date_now = new Date();
+
+project.configuration = {
+    cc: "arm-none-eabi-gcc",
+    cxx: "arm-none-eabi-g++",
+    asm: "arm-none-eabi-gcc",
+
+    cstd: Languages.C.StdC17,
+    cxxstd: Languages.CXX.StdCXX23,
+    gnudialect: true,
+
+    cflags: `${standard_flags}`,
+    cxxflags: `${standard_flags}`,
+    asmflags: `${standard_flags}`,
+    ldflags: `${standard_flags} --specs=nano.specs -Wl,--gc-sections`,
+
+    linkfile: `${project.env("WARDEN_LINKER_SCRIPT")}`,
+
+    builddir: `${project.var("outdir")}`,
+    outdir: `${project.var("outdir")}/bin`,
+    outname: `${project.env("WARDEN_OUT")}.elf`,
+};
+
+project.libraries = [
+    `${project.env("WARDEN_VENDOR_DIR")}/libopencm3`,
+];
+
+project.defines = [
+    "WARDEN",
+    "STM32F7",
+    [ "WBUILD_VERSION", `"${project.version[0]}.${project.version[1]}.${project.version[2]}"` ],
+    [ "WBUILD_VER_MAJ", `${project.version[0]}` ],
+    [ "WBUILD_VER_MIN", `${project.version[1]}` ],
+    [ "WBUILD_VER_REV", `${project.version[2]}` ],
+    [ "WBUILD_DATE_YEAR", `${date_now.getUTCFullYear()}` ],
+    [ "WBUILD_DATE_MONTH", `"${date_now.toLocaleString("en-US", { month: "long", timeZone: "UTC" })}"` ],
+    [ "WBUILD_DATE_DAY", `${date_now.getUTCDate()}` ],
+    [ "WBUILD_DATE_WEEKDAY", `"${date_now.toLocaleString("en-US", { weekday: "short", timeZone: "UTC" })}"` ],
+    [ "WBUILD_DATE_HOUR", date_now.getUTCHours().toString().padStart(2, "0") ],
+    [ "WBUILD_DATE_MIN", date_now.getUTCMinutes().toString().padStart(2, "0") ],
+    [ "WBUILD_DATE_SEC", date_now.getUTCSeconds().toString().padStart(2, "0") ],
+    [ "WBUILD_COMPILER", `"${project.configuration.cc}"` ],
+];
+
+project.includes = [
+    `${project.env("WARDEN_ROOT")}/src`,
+    `${project.env("WARDEN_VENDOR_DIR")}/libopencm3/include`,
+];
+
+project.targets = {
+    csources: {
+        name: "kernel",
+        language: Languages.C,
+        configuration: [ "debug", "release", "shipping" ],
+        files: [
+            Files.glob("src/*.c"),
+        ],
+        defines: [
+            [ "WBUILD_COUNT", `${project.build_count}` ],
+        ],
+    },
+    asmsources: {
+        name: "kernel_assembly",
+        langauge: Languages.ASM,
+        configuration: [ "debug", "release", "shipping" ],
+        files: [
+            "src/startup.s",
+        ],
+        defines: [
+            [ "WBUILD_COUNT", `${project.build_count}` ],
+        ],
+    },
+};
+
+const configuration = project.var("configuration");
+if (configuration == "debug") {
+    project.define_symbol(project.targets, [ "WBUILD_DEBUG" ]);
+}
+else if (configuration == "release") {
+    project.define_symbol(project.targets, [ "WBUILD_RELEASE" ]);
+}
+else if (configuration == "shipping") {
+    Target.define_symbol(project.targets, [ "WBUILD_SHIPPING" ]);
+}

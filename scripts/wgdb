@@ -1,0 +1,11 @@
+
+#!/usr/bin/env bash
+
+if [[ "$WARDEN_KERNEL" != "1" ]]; then
+    echo "error: bad environment"
+    echo "hint: source warden.env"
+    exit -1
+fi
+
+arm-none-eabi-gdb $WARDEN_BUILD_DIR/bin/warden.elf -ex "target remote :3333"
+wait %1
