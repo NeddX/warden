@@ -1,0 +1,27 @@
+#!/usr/bin/env node
+
+const project = Flask.add_project({
+    name: "libopencm3",
+    languages: [ Languages.C, Languages.ASM ],
+    type: ProjectType.Library,
+    version: [ 1, 0, 0 ],
+});
+
+project.configuration = {
+    outdir: "lib/",
+    outname: "libopencm3_stm32f7.a",
+};
+
+project.targets = {
+    custom_target: {
+        configuration: [ "debug", "release", "shipping" ],
+        exec: {
+            bin: "/usr/bin/make",
+            args: [
+                `TARGET=${project.var("libopencm3_target")}`,
+            ],
+            cwd: "./",
+            stdio: "suppress",
+        },
+    },
+};
